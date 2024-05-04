@@ -1,0 +1,92 @@
+https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/ipmulti_pim/configuration/xe-16/imc-pim-xe-16-book/imc-basic-cfg.html
+QUESTIONS:
+1. Why do we still need RP if we can do SPT directly instead?
+2. Instead of rejecting, is there a buffer for RPs when receiving multicast traffic if there are still no receivers?
+3. 
+
+If you are configuring PIM sparse mode, you must configure a PIM RP for a multicast group. An RP can either be configured statically in each device, or learned through a dynamic mechanism. Look at scenarios and topology.
+
+Sparse Mode
+- Forward multicast traffic if requested
+
+Dense Mode
+- Forward multicast traffic
+
+Rendezvous Point
+- Meeting point
+- Used by PIM sparse
+
+Root Path Tree (RPT) / Shared Distribution Tree
+- Concept of joining the Rendezvous Point.
+
+Shorter Path Tree (SPT)
+- PIM join messages towards the source using the best path.
+- Usage of PIM Prune towards RP.
+
+Bootstrap Router
+- BSR mechanism that allows multicast routers to learn set of group-to-RP mappings.
+
+Multicast Traffic:
+1. RP rejects PIM Register if source starts sending multicast traffic without any receivers.
+2. suppression timer default timer is 60 seconds, then source starts sending multicast traffic again.
+3. IGMP membership report to join multicast group
+4. PIM sparse routers will send PIM join if:
+	It has received an IGMP membership report from a host.
+	Received PIM join from a downstream router.
+5. Once learning source address, SPT is inevitable then send PIM Prune
+
+TLDR:
+1. PIM Register, source sending multicast traffic.
+OPTIONAL - IGMP Membership, join interfaces into a multicast group.
+2. PIM Join, RPT/SDT.
+3. PIM Prune, SPT, PIM Join towards best path.
+
+Scenarios:
+Configuring Sparse Mode with a Bootstrap Router
+1. For every multicast router, multicast routing is disabled by default
+ip multicast-routing
+
+2. For every interface participating in multicast path
+interface {interface}
+ ip pim sparse-mode
+ 
+2.1 **OPTIONAL** For DMVPN topology (I'm using EIGRP DMVPN Phase 3 as an example)
+ip nhrp map multicast dynamic
+or
+ip nhrp map multicast {peer-nbma-address}
+ip nhrp map multicast {peer-nbma-address}
+
+3. For RP router
+ip pim bsr-candidate {interface} [hash-length[priority]]
+ip pim rp-candidate {interface} [group-list [access-list]] [priority [priority]]
+
+4. **OPTIONAL** Join interfaces into multicast group
+interface {interface}
+ip igmp join-group {multicast-address}
+
+Configuring Sparse Mode with a Single Static RP
+ip multicast-routing
+interface {interface}
+ ip pim sparse-mode
+ ip igmp join-group {multicast-address}
+no ip pim autorp
+ip pim rp-address {rp-address} [access-list] override
+
+Configuring Bidirectional PIM
+ip multicast-routing
+interface {interface}
+ ip pim sparse-mode
+ip pim bidir-enable
+no ip pim autorp
+To prevent RP address conflict for dynamic and static RP mapping
+Without override, dynamic RP will take precedence
+With override, static RP will take precedence
+ ip pim rp-address override
+
+Configuring Sparse Mode with Auto-RP
+ip multicast-routing
+ip pim autorp listener
+ip pim send-rp-announce {loopback} scope {n} [group-list] {n}
+ip pim send-rp-discovery {loopback} scope {n}
+Prevents routers treating topology as dense if no RP is configured
+ no ip pim dm-fallback
