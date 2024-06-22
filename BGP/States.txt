@@ -1,0 +1,39 @@
+BGP Session States:
+    1. Idle
+    2. Connect
+    3. Open Sent
+    4. Open Active
+    5. Established
+
+Idle
+    - Activated by configuring "neighbor {ip-address} remote-as {as-number}" command.
+    - Initiates Three-Way TCP Handshake.
+    - Looks for the destination route in the routing table.
+
+Connect
+    - Receiving router looks at source address and founds a route in routing table.
+    - If Three-Way TCP Handshake is successful.
+
+Open Sent
+    - Open Message (Open Packet) is sent which contains parameters for a BGP session.
+
+Open Confirm
+    - Routers agree on parameters for session establishment.
+    - Goes into Active State if no response/haven't received an Open Message (Open Confirm Packet) after 5 seconds.
+
+Established
+    - BGP peering is established, routing begins.
+    - Final state of a BGP session.
+
+TROUBLESHOOT:
+    1. Idle
+        - No route to the source address from BGP Open Packet is found in the routing table.
+        - AS number is misconfigured.
+        - The neighbor is peering with the wrong address.
+        - No neighbor statement for the router.
+    2. Active
+        -   Most common problem is AS is misconfigured.
+        - Another common problem is that the neighbor might not have a return route to the source address. Ensure that the source IP address have been advertised from the local routing protocol (IGP).
+
+To identify issues, configure checker:
+    bgp consistency-checker { error-message | auto-repair } [interval minutes]
